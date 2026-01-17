@@ -470,6 +470,22 @@ async def get_class_analytics(class_name: str, user: dict = Depends(get_current_
         "avg_progress": sum([p.get('completion_percentage', 0) for p in progress_records]) / len(progress_records) if progress_records else 0,
         "students": students
     }
+SEED_SECRET = os.environ.get("SEED_SECRET", "change-this-secret")
+
+@api_router.post("/admin/seed")
+async def seed_remote(secret: str):
+    if secret != SEED_SECRET:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    # Clear existing data
+    await db.users.delete_many({})
+    await db.lessons.delete_many({})
+    await db.digital_literacy_modules.delete_many({})
+
+    from seed_data import seed_database
+    await seed_database()
+
+    return {"message": "Database seeded successfully"}
 
 # ============= Students List Route =============
 
